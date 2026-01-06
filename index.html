@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LRU Cache Visualizer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .app-header {
+            background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        /* Cards */
+        .visualization-card,
+        .operation-card,
+        .log-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .card-header h2 {
+            color: #182848;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .cache-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .capacity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid #eaeaea;
+        }
+
+        .capacity-control span {
+            font-weight: 600;
+            color: #444;
+            font-size: 0.95rem;
+        }
+
+        #capacity-input {
+            width: 60px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background-color: #4b6cb7;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #3a5795;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e4e6e9;
+            transform: translateY(-2px);
+        }
+
+        /* Cache Visualization */
+        .cache-visualization {
+            margin: 25px 0;
+        }
+
+        .cache-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .cache-item {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 15px;
+            text-align: center;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .cache-item.lru {
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(255, 107, 107, 0.08) 100%);
+        }
+
+        .cache-item.mru {
+            border-color: #4cd964;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(76, 217, 100, 0.08) 100%);
+        }
+
+        .cache-item.accessed {
+            animation: pulse 1s;
+            box-shadow: 0 0 0 3px rgba(76, 217, 100, 0.3), 0 3px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .cache-key {
+            font-weight: bold;
+            font-size: 1.4rem;
+            color: #182848;
+            margin-bottom: 12px;
+            word-break: break-word;
+        }
+
+        .cache-value {
+            color: #4b6cb7;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            word-break: break-word;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+
+        .cache-position {
+            font-size: 0.85rem;
+            color: white;
+            font-weight: 600;
+            padding: 4px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 70px;
+        }
+
+        .cache-item.lru .cache-position {
+            background-color: #ff6b6b;
+        }
+
+        .cache-item.mru .cache-position {
+            background-color: #4cd964;
+        }
+
+        .cache-item:not(.lru):not(.mru) .cache-position {
+            background-color: #4b6cb7;
+        }
+
+        .cache-empty {
+            color: #999;
+            font-style: italic;
+            padding: 20px;
+            font-size: 1.1rem;
+        }
+
+        /* Flow Indicator */
+        .flow-indicator {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid #eaeaea;
+        }
+
+        .flow-direction {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .flow-label {
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 8px 15px;
+            border-radius: 6px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .flow-label:first-child {
+            background-color: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+            border: 2px solid #ff6b6b;
+        }
+
+        .flow-label:last-child {
+            background-color: rgba(76, 217, 100, 0.1);
+            color: #4cd964;
+            border: 2px solid #4cd964;
+        }
+
+        .flow-arrow {
+            display: flex;
+            gap: 5px;
+            color: #4b6cb7;
+            font-size: 1.2rem;
+        }
+
+        .flow-explanation {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .flow-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flow-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .lru .flow-dot {
+            background-color: #ff6b6b;
+        }
+
+        .mru .flow-dot {
+            background-color: #4cd964;
+        }
+
+        /* Operations Column */
+        .operations-column {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .operation-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+            font-size: 1rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #4b6cb7;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .result-display {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .result-display p {
+            color: #666;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+
+        .result-success {
+            background-color: rgba(76, 217, 100, 0.1);
+            border-left: 4px solid #4cd964;
+            color: #155724;
+        }
+
+        .result-error {
+            background-color: rgba(255, 107, 107, 0.1);
+            border-left: 4px solid #ff6b6b;
+            color: #721c24;
+        }
+
+        .result-info {
+            background-color: rgba(75, 108, 183, 0.1);
+            border-left: 4px solid #4b6cb7;
+            color: #182848;
+        }
+
+        /* Log Card */
+        .log-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-container {
+            flex: 1;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #eaeaea;
+        }
+
+        .log-entry {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eaeaea;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            border-left: 4px solid transparent;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry.hit {
+            border-left-color: #4cd964;
+            background-color: rgba(76, 217, 100, 0.05);
+        }
+
+        .log-entry.miss {
+            border-left-color: #ff6b6b;
+            background-color: rgba(255, 107, 107, 0.05);
+        }
+
+        .log-entry.put {
+            border-left-color: #4b6cb7;
+            background-color: rgba(75, 108, 183, 0.05);
+        }
+
+        .log-entry.evict {
+            border-left-color: #ff9500;
+            background-color: rgba(255, 149, 0, 0.05);
+        }
+
+        .log-controls {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* Statistics Section */
+        .statistics-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
+        }
+
+        .statistics-section .section-header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eaeaea;
+            padding-bottom: 15px;
+        }
+
+        .statistics-section h2 {
+            color: #182848;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stats-grid .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #eaeaea;
+            transition: all 0.3s;
+            margin: 0;
+        }
+
+        .stats-grid .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #182848;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+        }
+
+        .cache-details {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid #eaeaea;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-item {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #444;
+            font-size: 1rem;
+        }
+
+        .detail-value {
+            font-weight: bold;
+            color: #4b6cb7;
+            font-size: 1.2rem;
+        }
+
+        /* Footer */
+        .app-footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .cache-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .cache-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .detail-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .detail-item {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .cache-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .cache-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-explanation {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>LRU Cache Visualizer</h1>
+            <p class="subtitle">Interactive visualization of Least Recently Used cache algorithm. See how items move through the cache and get evicted when capacity is reached.</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Left Column: Cache Visualization -->
+            <div class="visualization-column">
+                <div class="visualization-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-project-diagram"></i> Cache Visualization</h2>
+                        <div class="cache-controls">
+                            <div class="capacity-control">
+                                <span>Size:</span>
+                                <input type="number" id="capacity-input" min="1" max="12" value="3">
+                                <button id="update-size-btn" class="btn btn-small">
+                                    <i class="fas fa-sync-alt"></i> Update
+                                </button>
+                            </div>
+                            <button id="reset-btn" class="btn btn-small btn-secondary">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="cache-visualization">
+                        <div class="cache-grid" id="cache-grid">
+                            <!-- Cache items will be dynamically inserted here -->
+                        </div>
+                    </div>
+                    
+                    <div class="flow-indicator">
+                        <div class="flow-direction">
+                            <span class="flow-label">LRU</span>
+                            <div class="flow-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                                <i class="fas fa-arrow-right"></i>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                            <span class="flow-label">MRU</span>
+                        </div>
+                        <div class="flow-explanation">
+                            <div class="flow-item lru">
+                                <div class="flow-dot"></div>
+                                <span>Least Recently Used (Next to evict)</span>
+                            </div>
+                            <div class="flow-item mru">
+                                <div class="flow-dot"></div>
+                                <span>Most Recently Used</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Operations Log -->
+                <div class="log-card">
+                    <h3><i class="fas fa-history"></i> Operations Log</h3>
+                    <div class="log-container" id="log-container">
+                        <div class="log-entry">Cache initialized with capacity 3</div>
+                    </div>
+                    <div class="log-controls">
+                        <button id="clear-log-btn" class="btn btn-small btn-secondary">
+                            <i class="fas fa-trash"></i> Clear Log
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: Operations -->
+            <div class="operations-column">
+                <!-- Put Operation Card -->
+                <div class="operation-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-plus-circle"></i> Put Operation</h2>
+                    </div>
+                    
+                    <div class="operation-content">
+                        <div class="input-group">
+                            <label for="key-input">
+                                <i class="fas fa-key"></i> Key
+                            </label>
+                            <input type="text" id="key-input" placeholder="Enter cache key (e.g., 'user', 'session')">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="value-input">
+                                <i class="fas fa-value"></i> Value
+                            </label>
+                            <input type="text" id="value-input" placeholder="Enter cache value">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button id="execute-put-btn" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Execute Put
+                            </button>
+                            <button id="random-put-btn" class="btn btn-secondary">
+                                <i class="fas fa-random"></i> Add Random Item
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Get Operation Card -->
+                <div class="operation-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-search"></i> Get Operation</h2>
+                    </div>
+                    
+                    <div class="operation-content">
+                        <div class="input-group">
+                            <label for="get-key-input">
+                                <i class="fas fa-key"></i> Key to Retrieve
+                            </label>
+                            <input type="text" id="get-key-input" placeholder="Enter key to retrieve value">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button id="execute-get-btn" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Execute Get
+                            </button>
+                        </div>
+                        
+                        <div class="result-display" id="result-display">
+                            <p><i class="fas fa-info-circle"></i> Result will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Section (Below everything) -->
+        <div class="statistics-section">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-bar"></i> Cache Statistics</h2>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-ops">0</div>
+                        <div class="stat-label">Total Operations</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-value" id="hit-rate">0%</div>
+                        <div class="stat-label">Hit Rate</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-value" id="miss-rate">0%</div>
+                        <div class="stat-label">Miss Rate</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-value" id="evictions">0</div>
+                        <div class="stat-label">Evictions</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-trash-alt"></i>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-value" id="access-freq">0</div>
+                        <div class="stat-label">Avg. Access Frequency</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-value" id="cache-size">0/3</div>
+                        <div class="stat-label">Cache Usage</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cache-details">
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <span class="detail-label">Cache Capacity:</span>
+                        <span class="detail-value" id="detail-capacity">3</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Current Items:</span>
+                        <span class="detail-value" id="detail-current">0</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Available Slots:</span>
+                        <span class="detail-value" id="detail-available">3</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <span class="detail-label">Cache Hits:</span>
+                        <span class="detail-value" id="detail-hits">0</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Cache Misses:</span>
+                        <span class="detail-value" id="detail-misses">0</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Accesses:</span>
+                        <span class="detail-value" id="detail-total-access">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="app-footer">
+            <p>LRU Cache Visualizer • Items are evicted from LRU (Least Recently Used) end when capacity is reached</p>
+        </footer>
+    </div>
+
+    <script>
+        // LRU Cache Implementation
+        class LRUCache {
+            constructor(capacity) {
+                this.capacity = capacity;
+                this.cache = new Map();
+                this.hits = 0;
+                this.misses = 0;
+                this.evictions = 0;
+                this.totalOperations = 0;
+                this.accessFrequency = new Map();
+            }
+            
+            get(key) {
+                this.totalOperations++;
+                
+                if (this.cache.has(key)) {
+                    // Move to end (most recently used)
+                    const value = this.cache.get(key);
+                    this.cache.delete(key);
+                    this.cache.set(key, value);
+                    
+                    // Update access frequency
+                    this.accessFrequency.set(key, (this.accessFrequency.get(key) || 0) + 1);
+                    
+                    this.hits++;
+                    return value;
+                }
+                
+                this.misses++;
+                return null;
+            }
+            
+            put(key, value) {
+                this.totalOperations++;
+                
+                let evictedKey = null;
+                
+                // If key already exists, remove it first
+                if (this.cache.has(key)) {
+                    this.cache.delete(key);
+                }
+                
+                // If at capacity, remove least recently used (first item)
+                if (this.cache.size >= this.capacity) {
+                    const firstKey = this.cache.keys().next().value;
+                    evictedKey = firstKey;
+                    this.cache.delete(firstKey);
+                    this.evictions++;
+                }
+                
+                this.cache.set(key, value);
+                
+                // Update access frequency
+                this.accessFrequency.set(key, (this.accessFrequency.get(key) || 0) + 1);
+                
+                return evictedKey;
+            }
+            
+            getSize() {
+                return this.cache.size;
+            }
+            
+            getEntries() {
+                return Array.from(this.cache.entries());
+            }
+            
+            getHitRate() {
+                if (this.hits + this.misses === 0) return 0;
+                return Math.round((this.hits / (this.hits + this.misses)) * 100);
+            }
+            
+            getMissRate() {
+                if (this.hits + this.misses === 0) return 0;
+                return Math.round((this.misses / (this.hits + this.misses)) * 100);
+            }
+            
+            getAverageAccessFrequency() {
+                if (this.accessFrequency.size === 0) return 0;
+                const frequencies = Array.from(this.accessFrequency.values());
+                return (frequencies.reduce((a, b) => a + b, 0) / frequencies.length).toFixed(1);
+            }
+            
+            reset() {
+                this.cache.clear();
+                this.hits = 0;
+                this.misses = 0;
+                this.evictions = 0;
+                this.totalOperations = 0;
+                this.accessFrequency.clear();
+            }
+        }
+
+        // DOM Elements
+        const cacheGrid = document.getElementById('cache-grid');
+        const capacityInput = document.getElementById('capacity-input');
+        const updateSizeBtn = document.getElementById('update-size-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const keyInput = document.getElementById('key-input');
+        const valueInput = document.getElementById('value-input');
+        const getKeyInput = document.getElementById('get-key-input');
+        const executePutBtn = document.getElementById('execute-put-btn');
+        const randomPutBtn = document.getElementById('random-put-btn');
+        const executeGetBtn = document.getElementById('execute-get-btn');
+        const clearLogBtn = document.getElementById('clear-log-btn');
+        const resultDisplay = document.getElementById('result-display');
+        const logContainer = document.getElementById('log-container');
+
+        // Statistics elements
+        const totalOpsElement = document.getElementById('total-ops');
+        const hitRateElement = document.getElementById('hit-rate');
+        const missRateElement = document.getElementById('miss-rate');
+        const evictionsElement = document.getElementById('evictions');
+        const accessFreqElement = document.getElementById('access-freq');
+        const cacheSizeElement = document.getElementById('cache-size');
+        const detailCapacityElement = document.getElementById('detail-capacity');
+        const detailCurrentElement = document.getElementById('detail-current');
+        const detailAvailableElement = document.getElementById('detail-available');
+        const detailHitsElement = document.getElementById('detail-hits');
+        const detailMissesElement = document.getElementById('detail-misses');
+        const detailTotalAccessElement = document.getElementById('detail-total-access');
+
+        // Initialize cache
+        let cache = new LRUCache(parseInt(capacityInput.value));
+        let accessedKey = null;
+
+        // Initialize with some data
+        function initializeWithData() {
+            cache.put('price_771', '1299.99_2476');
+            cache.put('theme_217', 'english_670');
+            cache.put('token_766', 'xyz123abc_2996');
+            
+            addLogEntry('Cache initialized with capacity ' + cache.capacity, 'info');
+            updateAllDisplays();
+        }
+
+        // Update all displays
+        function updateAllDisplays() {
+            updateCacheDisplay();
+            updateStatistics();
+        }
+
+        // Update cache visualization
+        function updateCacheDisplay() {
+            cacheGrid.innerHTML = '';
+            
+            const entries = cache.getEntries();
+            const capacity = cache.capacity;
+            
+            // Create cache items for filled slots
+            entries.forEach(([key, value], index) => {
+                const cacheItem = document.createElement('div');
+                cacheItem.className = 'cache-item';
+                
+                // Mark as LRU (first item) or MRU (last item)
+                if (index === 0) {
+                    cacheItem.classList.add('lru');
+                } else if (index === entries.length - 1) {
+                    cacheItem.classList.add('mru');
+                }
+                
+                // Highlight recently accessed item
+                if (key === accessedKey) {
+                    cacheItem.classList.add('accessed');
+                }
+                
+                // Determine position text
+                let positionText = '';
+                if (index === 0) {
+                    positionText = 'LRU';
+                } else if (index === entries.length - 1) {
+                    positionText = 'MRU';
+                } else {
+                    positionText = `Pos ${index + 1}`;
+                }
+                
+                cacheItem.innerHTML = `
+                    <div class="cache-key">${key}</div>
+                    <div class="cache-value">${value}</div>
+                    <div class="cache-position">${positionText}</div>
+                `;
+                
+                cacheGrid.appendChild(cacheItem);
+            });
+            
+            // Create empty slots for remaining capacity
+            for (let i = entries.length; i < capacity; i++) {
+                const emptySlot = document.createElement('div');
+                emptySlot.className = 'cache-item';
+                emptySlot.innerHTML = `
+                    <div class="cache-empty">Empty Slot</div>
+                    <div class="cache-position">Pos ${i + 1}</div>
+                `;
+                cacheGrid.appendChild(emptySlot);
+            }
+            
+            // Clear accessed key after display update
+            setTimeout(() => {
+                accessedKey = null;
+                updateCacheDisplay();
+            }, 1000);
+        }
+
+        // Update statistics display
+        function updateStatistics() {
+            totalOpsElement.textContent = cache.totalOperations;
+            hitRateElement.textContent = cache.getHitRate() + '%';
+            missRateElement.textContent = cache.getMissRate() + '%';
+            evictionsElement.textContent = cache.evictions;
+            accessFreqElement.textContent = cache.getAverageAccessFrequency();
+            cacheSizeElement.textContent = `${cache.getSize()}/${cache.capacity}`;
+            
+            // Update detail panel
+            detailCapacityElement.textContent = cache.capacity;
+            detailCurrentElement.textContent = cache.getSize();
+            detailAvailableElement.textContent = cache.capacity - cache.getSize();
+            detailHitsElement.textContent = cache.hits;
+            detailMissesElement.textContent = cache.misses;
+            detailTotalAccessElement.textContent = cache.hits + cache.misses;
+        }
+
+        // Execute put operation
+        function executePutOperation() {
+            const key = keyInput.value.trim();
+            const value = valueInput.value.trim();
+            
+            if (!key) {
+                showResult('Please enter a key for put operation', 'error');
+                return;
+            }
+            
+            if (!value) {
+                showResult('Please enter a value for put operation', 'error');
+                return;
+            }
+            
+            const evictedKey = cache.put(key, value);
+            accessedKey = key;
+            
+            if (evictedKey) {
+                addLogEntry(`PUT: Added "${key}" = "${value}". Evicted "${evictedKey}"`, 'evict');
+                showResult(`Added "${key}" = "${value}". Evicted "${evictedKey}" due to capacity limit.`, 'success');
+            } else {
+                addLogEntry(`PUT: Added "${key}" = "${value}"`, 'put');
+                showResult(`Added "${key}" = "${value}" to cache.`, 'success');
+            }
+            
+            // Clear inputs
+            keyInput.value = '';
+            valueInput.value = '';
+            
+            updateAllDisplays();
+        }
+
+        // Execute get operation
+        function executeGetOperation() {
+            const key = getKeyInput.value.trim();
+            
+            if (!key) {
+                showResult('Please enter a key to retrieve', 'error');
+                return;
+            }
+            
+            const value = cache.get(key);
+            accessedKey = key;
+            
+            if (value !== null) {
+                addLogEntry(`GET: Found "${key}" = "${value}"`, 'hit');
+                showResult(`Cache HIT: "${key}" = "${value}"`, 'success');
+            } else {
+                addLogEntry(`GET: Key "${key}" not found`, 'miss');
+                showResult(`Cache MISS: "${key}" not found in cache`, 'error');
+            }
+            
+            getKeyInput.value = '';
+            updateAllDisplays();
+        }
+
+        // Add random item to cache
+        function addRandomItem() {
+            const randomKeys = ['product', 'price', 'user_id', 'token', 'config', 'theme', 'language', 'currency', 'session', 'item'];
+            const randomValues = ['laptop', '1299.99', 'user_789', 'xyz123abc', 'dark_mode', 'english', 'USD', 'premium', 'active', 'data'];
+            
+            const randomIndex = Math.floor(Math.random() * randomKeys.length);
+            const key = randomKeys[randomIndex] + '_' + Math.floor(Math.random() * 1000);
+            const value = randomValues[randomIndex] + '_' + Math.floor(Math.random() * 10000);
+            
+            const evictedKey = cache.put(key, value);
+            accessedKey = key;
+            
+            if (evictedKey) {
+                addLogEntry(`PUT RANDOM: Added "${key}" = "${value}". Evicted "${evictedKey}"`, 'evict');
+                showResult(`Added random item "${key}" = "${value}". Evicted "${evictedKey}".`, 'success');
+            } else {
+                addLogEntry(`PUT RANDOM: Added "${key}" = "${value}"`, 'put');
+                showResult(`Added random item "${key}" = "${value}"`, 'success');
+            }
+            
+            updateAllDisplays();
+        }
+
+        // Update cache capacity
+        function updateCacheCapacity() {
+            const newCapacity = parseInt(capacityInput.value);
+            
+            if (newCapacity < 1) {
+                capacityInput.value = 1;
+                return;
+            }
+            
+            if (newCapacity > 12) {
+                capacityInput.value = 12;
+                return;
+            }
+            
+            // Create new cache with updated capacity
+            const entries = cache.getEntries();
+            cache = new LRUCache(newCapacity);
+            
+            // Restore entries (up to new capacity, keeping most recent)
+            const startIndex = Math.max(0, entries.length - newCapacity);
+            for (let i = startIndex; i < entries.length; i++) {
+                cache.put(entries[i][0], entries[i][1]);
+            }
+            
+            addLogEntry(`Capacity updated to ${newCapacity}`, 'info');
+            updateAllDisplays();
+        }
+
+        // Reset cache
+        function resetCache() {
+            cache.reset();
+            cache = new LRUCache(parseInt(capacityInput.value));
+            addLogEntry('Cache reset to empty state', 'info');
+            showResult('Cache has been reset to empty state', 'info');
+            updateAllDisplays();
+        }
+
+        // Show result message
+        function showResult(message, type) {
+            const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+            resultDisplay.innerHTML = `<p><i class="fas fa-${icon}"></i> ${message}</p>`;
+            resultDisplay.className = 'result-display';
+            resultDisplay.classList.add(`result-${type}`);
+            
+            // Clear result after 3 seconds for get operations
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    resultDisplay.innerHTML = '<p><i class="fas fa-info-circle"></i> Result will appear here</p>';
+                    resultDisplay.className = 'result-display';
+                }, 3000);
+            }
+        }
+
+        // Add log entry
+        function addLogEntry(message, type = 'info') {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logContainer.prepend(logEntry);
+            
+            // Keep only last 10 log entries
+            const entries = logContainer.querySelectorAll('.log-entry');
+            if (entries.length > 10) {
+                entries[entries.length - 1].remove();
+            }
+        }
+
+        // Clear log
+        function clearLog() {
+            logContainer.innerHTML = '<div class="log-entry">Log cleared</div>';
+            addLogEntry('Operations log cleared', 'info');
+        }
+
+        // Event Listeners
+        executePutBtn.addEventListener('click', executePutOperation);
+        randomPutBtn.addEventListener('click', addRandomItem);
+        executeGetBtn.addEventListener('click', executeGetOperation);
+        updateSizeBtn.addEventListener('click', updateCacheCapacity);
+        resetBtn.addEventListener('click', resetCache);
+        clearLogBtn.addEventListener('click', clearLog);
+
+        // Allow Enter key to submit forms
+        keyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executePutOperation();
+        });
+
+        valueInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executePutOperation();
+        });
+
+        getKeyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeGetOperation();
+        });
+
+        capacityInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') updateCacheCapacity();
+        });
+
+        // Initialize the display
+        initializeWithData();
+    </script>
+</body>
+</html>
